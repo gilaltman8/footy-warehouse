@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+target/
+dbt_packages/
+logs/
+.astro/
+.env
+data/
+*.token
