@@ -8,3 +8,7 @@
 - [Day 2] cast for goals, try_cast for the rest — missing goals mean a broken file and must fail loudly; missing shots or odds are normal in older data — at 100×: the same split, logged as a data contract.
 - [Day 2] match_key = hash(date, home, away), no season — a date plus two teams is already unique — at 100×: same key; the unique test is the grain check.
 - [Day 2] Profile reads host, path and token from env vars; dbt init ran with --skip-profile-setup so the token was never written to a file.
+- [Day 3] dim_team = every team seen in any loaded season (145), not one season's 120 — keys are hashes of the name.
+- [Day 3] fct_match is incremental MERGE on match_key, watermark = max(_loaded_at) — proved: reload of 25/26 E0 → DESCRIBE HISTORY MERGE numSourceRows 380, updated 380, inserted 0; count 380 before and after; incremental count = full-refresh count (4,953).
+- [Day 3] Watermark weakness: a reload with an older _loaded_at would be missed → lookback var (default 3 days), off with --vars '{lookback_days: 0}' when exact metrics are needed — reprocessing is harmless because the MERGE is keyed.
+- [Day 3] Delta MERGE writes a deletion vector instead of rewriting files; dbt-databricks runs OPTIMIZE after each build because of liquid clustering (2 files → 1).

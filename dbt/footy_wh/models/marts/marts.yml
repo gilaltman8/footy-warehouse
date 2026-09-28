@@ -1,0 +1,37 @@
+version: 2
+models:
+  - name: dim_season
+    columns:
+      - name: season_key
+        data_tests: [unique, not_null]
+  - name: dim_team
+    columns:
+      - name: team_key
+        data_tests: [unique, not_null]
+      - name: team_name
+        data_tests: [unique, not_null]
+  - name: fct_match
+    description: One row per match with typed stats, points and odds. Incremental merge on match_key.
+    columns:
+      - name: match_key
+        data_tests: [unique, not_null]
+      - name: home_team_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
+      - name: away_team_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
+      - name: season
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_season')
+                field: season_key
