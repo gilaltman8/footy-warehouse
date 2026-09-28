@@ -1,0 +1,35 @@
+version: 2
+models:
+  - name: stg_matches
+    description: One row per match. Typed and deduplicated on (match_date, home_team, away_team), latest load wins.
+    columns:
+      - name: match_key
+        description: Surrogate key on match_date, home_team, away_team.
+        data_tests: [unique, not_null]
+      - name: match_date
+        data_tests: [not_null]
+      - name: home_team
+        data_tests:
+          - not_null
+          - not_same_team:
+              arguments:
+                other_column: away_team
+      - name: away_team
+        data_tests: [not_null]
+      - name: home_goals
+        data_tests: [not_null]
+      - name: away_goals
+        data_tests: [not_null]
+      - name: full_time_result
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['H', 'D', 'A']
+      - name: season
+        data_tests: [not_null]
+      - name: div_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['E0', 'E1', 'SP1', 'D1', 'I1', 'F1']

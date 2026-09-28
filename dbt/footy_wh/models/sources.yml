@@ -1,0 +1,18 @@
+version: 2
+sources:
+  - name: raw
+    description: Raw match files from football-data.co.uk, one row per match, all STRING except match_date.
+    database: footy      # dbt calls the catalog 'database'
+    schema: raw
+    tables:
+      - name: matches
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: {count: 8, period: day}
+            error_after: {count: 15, period: day}
+        columns:
+          - name: home_team
+            data_tests: [not_null]
+          - name: away_team
+            data_tests: [not_null]

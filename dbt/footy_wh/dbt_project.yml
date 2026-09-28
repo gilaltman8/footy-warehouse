@@ -1,0 +1,24 @@
+name: footy_wh
+version: "1.0.0"
+profile: footy_wh
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+query-comment:
+  comment: "dbt {{ node.name if node else 'run' }}"
+  append: true
+
+vars:
+  current_season: '2627'   # the one place to change each August
+
+models:
+  footy_wh:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts

@@ -2,3 +2,9 @@
 - [Day 1] Raw load = DELETE the (season, league) slice + COPY INTO … force=true — idempotent per slice; force is needed because COPY INTO otherwise skips a file it already loaded, leaving the slice empty — at 100×: one atomic INSERT … REPLACE WHERE so readers never see an empty slice (DESCRIBE HISTORY v1 shows that window).
 - [Day 1] Exit code 1 only if every league fails; one missing league logs a warning — Airflow reads the exit code as success/failure — at 100×: per-league tasks with their own retries.
 - [Day 1] Parquet schema declared explicitly (pyarrow) — pandas 3 wrote text as large_string and Delta rejected the COPY — lesson: never trust library defaults at a system boundary; at 100×: pin versions and contract-test the file schema in CI.
+- [Day 2] dbt-core 1.12.3 + dbt-databricks 1.12.5; YAML in 1.12 style (data_tests, arguments:, source config:) — zero deprecation warnings — at 100×: pin in requirements and upgrade on a branch with CI.
+- [Day 2] stg_matches is a VIEW — cheap, always reflects raw, no state to backfill — at 100×: materialise as a table if many marts read it and the reads get slow.
+- [Day 2] Dedupe on (match_date, home_team, away_team), latest _loaded_at wins — a corrected re-load replaces the old row — at 100×: the same rule, enforced by the unique test on match_key.
+- [Day 2] cast for goals, try_cast for the rest — missing goals mean a broken file and must fail loudly; missing shots or odds are normal in older data — at 100×: the same split, logged as a data contract.
+- [Day 2] match_key = hash(date, home, away), no season — a date plus two teams is already unique — at 100×: same key; the unique test is the grain check.
+- [Day 2] Profile reads host, path and token from env vars; dbt init ran with --skip-profile-setup so the token was never written to a file.
