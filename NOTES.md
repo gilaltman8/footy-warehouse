@@ -1,0 +1,4 @@
+- [Day 1] Raw keeps every column as STRING (except match_date, _loaded_at) — casting is staging's job, so a bad value never fails a load — at 100×: same rule, plus schema-drift alerts.
+- [Day 1] Raw load = DELETE the (season, league) slice + COPY INTO … force=true — idempotent per slice; force is needed because COPY INTO otherwise skips a file it already loaded, leaving the slice empty — at 100×: one atomic INSERT … REPLACE WHERE so readers never see an empty slice (DESCRIBE HISTORY v1 shows that window).
+- [Day 1] Exit code 1 only if every league fails; one missing league logs a warning — Airflow reads the exit code as success/failure — at 100×: per-league tasks with their own retries.
+- [Day 1] Parquet schema declared explicitly (pyarrow) — pandas 3 wrote text as large_string and Delta rejected the COPY — lesson: never trust library defaults at a system boundary; at 100×: pin versions and contract-test the file schema in CI.
