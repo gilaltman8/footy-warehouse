@@ -19,3 +19,6 @@
 - [Day 4] Form = rows between 5 preceding and 1 preceding — the current match is excluded (no leakage); partitioned by team only, so form carries across seasons; match_key breaks date ties for a deterministic order.
 - [Day 4] Named windows: Databricks can't extend a window name with a frame (over (w rows …) is a parse error), so each frame lives inside its own named window.
 - [Day 4] Validation against an outside source: computed 24/25 PL table matches the official one exactly (Liverpool 84 … Southampton 12, all tie-breaks). Balance tests: wins = losses and goals for = against in every league-season.
+- [Day 3] Schema evolution: Referee added to the RENAME contract → ddl() ALTERs the raw table additively (warned once, silent on re-runs) → stg + fct carry it → fct_match got the column via on_schema_change=append_new_columns, no rebuild.
+- [Day 3] New column ≠ filled history: after the change only 26/27 E0 had referees. Backfilled by reloading slices (incremental MERGE, resumable, keeps time travel), not --full-refresh (rewrites the table, resets history — a maintenance window at 100×). Result: 2,009/2,009 English matches have a referee.
+- [Day 3] append_new_columns only handles additions. A column that changes type or is removed needs a full refresh or an explicit migration — additive is the only automatic direction, deliberately.
