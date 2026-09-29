@@ -1,3 +1,7 @@
+# Design decisions
+
+- [Day 0] Databricks Free Edition, not BigQuery — BigQuery's card-free sandbox blocks DML (no MERGE) and expires tables after 60 days — at 100×: a paid workspace with cluster policies and budgets.
+- [Day 0] Devcontainer on GitHub's default universal:2 image, not python + Docker feature — the feature build broke twice (Debian trixie dropped moby; an expired Yarn apt key) — lesson: pin base images and prefer maintained images over stacking installers; at 100×: a custom image built and tested in CI.
 - [Day 1] Raw keeps every column as STRING (except match_date, _loaded_at) — casting is staging's job, so a bad value never fails a load — at 100×: same rule, plus schema-drift alerts.
 - [Day 1] Raw load = DELETE the (season, league) slice + COPY INTO … force=true — idempotent per slice; force is needed because COPY INTO otherwise skips a file it already loaded, leaving the slice empty — at 100×: one atomic INSERT … REPLACE WHERE so readers never see an empty slice (DESCRIBE HISTORY v1 shows that window).
 - [Day 1] Exit code 1 only if every league fails; one missing league logs a warning — Airflow reads the exit code as success/failure — at 100×: per-league tasks with their own retries.
