@@ -1,21 +1,53 @@
 version: 2
 models:
   - name: dim_season
+    description: One row per loaded season.
     columns:
       - name: season_key
+        description: "{{ doc('season') }}"
         data_tests: [unique, not_null]
+      - name: season_start_year
+        description: Calendar year the season starts, e.g. 2024 for 2024/25.
+      - name: season_label
+        description: Display label, e.g. 2024/25.
+
   - name: dim_team
+    description: One row per team seen in any loaded season and division.
     columns:
       - name: team_key
+        description: "{{ doc('team_key') }}"
         data_tests: [unique, not_null]
       - name: team_name
+        description: Team name as the source spells it.
         data_tests: [unique, not_null]
+      - name: first_match_date
+        description: Earliest loaded match for the team.
+      - name: last_match_date
+        description: Latest loaded match for the team.
+
   - name: fct_match
-    description: One row per match with typed stats, points and odds. Incremental merge on match_key.
+    description: >
+      One row per match with typed stats, points and odds. Incremental MERGE on match_key;
+      watermark on _loaded_at with a lookback (var lookback_days, default 3).
     columns:
       - name: match_key
+        description: "{{ doc('match_key') }}"
         data_tests: [unique, not_null]
+      - name: match_date
+        description: "{{ doc('match_date') }}"
+      - name: kickoff_time
+        description: Local kick-off time as text (HH:MM).
+      - name: season
+        description: "{{ doc('season') }}"
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_season')
+                field: season_key
+      - name: div_code
+        description: "{{ doc('div_code') }}"
       - name: home_team_key
+        description: Home team. {{ doc('team_key') }}
         data_tests:
           - not_null
           - relationships:
@@ -23,15 +55,172 @@ models:
                 to: ref('dim_team')
                 field: team_key
       - name: away_team_key
+        description: Away team. {{ doc('team_key') }}
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('dim_team')
                 field: team_key
+      - name: home_goals
+        description: Full-time goals by the home team.
+      - name: away_goals
+        description: Full-time goals by the away team.
+      - name: full_time_result
+        description: H home win, D draw, A away win.
+      - name: ht_home_goals
+        description: Half-time goals by the home team.
+      - name: ht_away_goals
+        description: Half-time goals by the away team.
+      - name: home_shots
+        description: Shots by the home team.
+      - name: away_shots
+        description: Shots by the away team.
+      - name: home_shots_on_target
+        description: Shots on target by the home team.
+      - name: away_shots_on_target
+        description: Shots on target by the away team.
+      - name: home_corners
+        description: Corners won by the home team.
+      - name: away_corners
+        description: Corners won by the away team.
+      - name: home_fouls
+        description: Fouls committed by the home team.
+      - name: away_fouls
+        description: Fouls committed by the away team.
+      - name: home_yellows
+        description: Yellow cards shown to the home team.
+      - name: away_yellows
+        description: Yellow cards shown to the away team.
+      - name: home_reds
+        description: Red cards shown to the home team.
+      - name: away_reds
+        description: Red cards shown to the away team.
+      - name: odds_home
+        description: Bet365 decimal odds for a home win.
+      - name: odds_draw
+        description: Bet365 decimal odds for a draw.
+      - name: odds_away
+        description: Bet365 decimal odds for an away win.
+      - name: referee
+        description: Referee name; English divisions only.
+      - name: home_points
+        description: Points for the home team. {{ doc('points') }}
+      - name: away_points
+        description: Points for the away team. {{ doc('points') }}
+      - name: _loaded_at
+        description: "{{ doc('loaded_at') }}"
+
+  - name: fct_team_match
+    description: One row per team per match — each match unpivoted into a home row and an away row (tested at exactly 2× fct_match).
+    columns:
+      - name: team_match_key
+        description: Surrogate key on match_key + team_key.
+        data_tests: [unique, not_null]
+      - name: match_key
+        description: "{{ doc('match_key') }}"
+      - name: match_date
+        description: "{{ doc('match_date') }}"
       - name: season
+        description: "{{ doc('season') }}"
+      - name: div_code
+        description: "{{ doc('div_code') }}"
+      - name: team_key
+        description: "{{ doc('team_key') }}"
+      - name: opponent_key
+        description: The other team in the match. {{ doc('team_key') }}
+      - name: is_home
+        description: True if the team played at home.
+      - name: goals_for
+        description: Goals scored by the team.
+      - name: goals_against
+        description: Goals conceded by the team.
+      - name: points
+        description: "{{ doc('points') }}"
+      - name: shots
+        description: Shots by the team.
+      - name: shots_on_target
+        description: Shots on target by the team.
+      - name: corners
+        description: Corners won by the team.
+      - name: yellows
+        description: Yellow cards shown to the team.
+      - name: reds
+        description: Red cards shown to the team.
+      - name: result
+        description: "{{ doc('result') }}"
         data_tests:
-          - relationships:
+          - accepted_values:
               arguments:
-                to: ref('dim_season')
-                field: season_key
+                values: ['W', 'D', 'L']
+
+  - name: fct_team_form
+    description: Rolling form per team per match. Form windows end one match before the current one — no leakage.
+    columns:
+      - name: team_match_key
+        description: Surrogate key on match_key + team_key.
+        data_tests: [unique, not_null]
+      - name: match_key
+        description: "{{ doc('match_key') }}"
+      - name: team_key
+        description: "{{ doc('team_key') }}"
+      - name: match_date
+        description: "{{ doc('match_date') }}"
+      - name: season
+        description: "{{ doc('season') }}"
+      - name: div_code
+        description: "{{ doc('div_code') }}"
+      - name: is_home
+        description: True if the team played at home.
+      - name: goals_for
+        description: Goals scored in this match.
+      - name: goals_against
+        description: Goals conceded in this match.
+      - name: points
+        description: "{{ doc('points') }}"
+      - name: result
+        description: "{{ doc('result') }}"
+      - name: points_last_5
+        description: "{{ doc('points_last_5') }}"
+      - name: goals_for_last_5
+        description: Goals scored in the previous five matches, excluding the current one.
+      - name: goals_against_last_5
+        description: Goals conceded in the previous five matches, excluding the current one.
+      - name: matches_in_window
+        description: How many earlier matches the form window found (0 to 5). Below 5 early in the loaded history.
+      - name: season_points
+        description: Points so far this season in this division, including the current match.
+      - name: season_gd
+        description: Goal difference so far this season, including the current match.
+      - name: matches_played_season
+        description: Matches played so far this season, including the current one.
+      - name: position_on_date
+        description: League position on the match date, by season points then goal difference — among teams that played that day.
+
+  - name: league_table
+    description: Final (or current) table per season and division, from fct_team_match. Validated against the official 24/25 Premier League table.
+    columns:
+      - name: season
+        description: "{{ doc('season') }}"
+      - name: div_code
+        description: "{{ doc('div_code') }}"
+      - name: team_key
+        description: "{{ doc('team_key') }}"
+      - name: played
+        description: Matches played.
+      - name: won
+        description: Matches won.
+      - name: drawn
+        description: Matches drawn.
+      - name: lost
+        description: Matches lost.
+      - name: goals_for
+        description: Goals scored.
+      - name: goals_against
+        description: Goals conceded.
+      - name: goal_difference
+        description: goals_for minus goals_against.
+      - name: points
+        description: League points.
+      - name: position
+        description: Rank by points, then goal difference, then goals for.
