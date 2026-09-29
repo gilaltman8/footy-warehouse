@@ -26,3 +26,6 @@
 - [Day 3] Schema evolution: Referee added to the RENAME contract → ddl() ALTERs the raw table additively (warned once, silent on re-runs) → stg + fct carry it → fct_match got the column via on_schema_change=append_new_columns, no rebuild.
 - [Day 3] New column ≠ filled history: after the change only 26/27 E0 had referees. Backfilled by reloading slices (incremental MERGE, resumable, keeps time travel), not --full-refresh (rewrites the table, resets history — a maintenance window at 100×). Result: 2,009/2,009 English matches have a referee.
 - [Day 3] append_new_columns only handles additions. A column that changes type or is removed needs a full refresh or an explicit migration — additive is the only automatic direction, deliberately.
+- [Day 5] Every model and column documented (doc blocks for shared definitions); checked against catalog.json, i.e. against the columns that really exist, not just the YAML.
+- [Day 5] ci target built by hand once: same code into footy.ci_staging / ci_marts via the schema macro — what CI will run on every PR.
+- [Day 5] sqlfluff 4.3 with the dbt templater: 100 style fixes, dbt build still PASS=42 afterwards (never trust an auto-fix without the tests). Excluded ST06 (reorders SELECT columns — would break the union-by-position in fct_team_match), RF04 (renaming result/position changes the contract), AL03.

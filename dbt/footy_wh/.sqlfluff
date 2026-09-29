@@ -1,0 +1,8 @@
+[sqlfluff]
+dialect = databricks
+templater = dbt
+max_line_length = 120
+exclude_rules = LT05, AM04, ST06, RF04, AL03
+
+[sqlfluff:templater:dbt]
+project_dir = .
