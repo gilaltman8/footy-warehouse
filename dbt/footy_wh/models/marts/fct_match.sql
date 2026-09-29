@@ -27,6 +27,7 @@ select
     m.home_yellows, m.away_yellows,
     m.home_reds, m.away_reds,
     m.odds_home, m.odds_draw, m.odds_away,
+    m.referee,
     case m.full_time_result when 'H' then 3 when 'D' then 1 else 0 end as home_points,
     case m.full_time_result when 'A' then 3 when 'D' then 1 else 0 end as away_points,
     m._loaded_at

@@ -34,6 +34,7 @@ RENAME = {
     "HY": "home_yellows", "AY": "away_yellows",
     "HR": "home_reds", "AR": "away_reds",
     "B365H": "odds_home", "B365D": "odds_draw", "B365A": "odds_away",
+    "Referee": "referee",
 }
 COLS = list(RENAME.values()) + ["match_date", "season", "div_code", "_loaded_at", "_source_file"]
 # explicit file types: plain strings (pandas 3 would write "large_string", which Delta rejects)
@@ -63,12 +64,15 @@ def connect():
 
 
 def ddl(cur) -> None:
-    cols = ",\n  ".join(
-        f"{c} STRING" if c not in ("match_date", "_loaded_at") else
-        (f"{c} DATE" if c == "match_date" else f"{c} TIMESTAMP")
-        for c in COLS
-    )
+    typ = lambda c: "DATE" if c == "match_date" else "TIMESTAMP" if c == "_loaded_at" else "STRING"
+    cols = ",\n  ".join(f"{c} {typ(c)}" for c in COLS)
     cur.execute(f"CREATE TABLE IF NOT EXISTS {TABLE} (\n  {cols}\n) USING DELTA")
+    cur.execute(f"DESCRIBE TABLE {TABLE}")
+    existing = {row[0] for row in cur.fetchall()}
+    for c in COLS:
+        if c not in existing:            # additive only: never drop or retype here
+            cur.execute(f"ALTER TABLE {TABLE} ADD COLUMN {c} {typ(c)}")
+            log.warning("schema change: added raw column %s", c)
 
 
 def fetch(season: str, div: str):

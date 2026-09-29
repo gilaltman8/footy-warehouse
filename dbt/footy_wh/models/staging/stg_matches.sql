@@ -29,6 +29,7 @@ typed as (
         try_cast(odds_home as double)               as odds_home,
         try_cast(odds_draw as double)               as odds_draw,
         try_cast(odds_away as double)               as odds_away,
+        nullif(trim(referee), '')                   as referee,
         _loaded_at,
         _source_file
     from src
