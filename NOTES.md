@@ -29,3 +29,5 @@
 - [Day 5] Every model and column documented (doc blocks for shared definitions); checked against catalog.json, i.e. against the columns that really exist, not just the YAML.
 - [Day 5] ci target built by hand once: same code into footy.ci_staging / ci_marts via the schema macro — what CI will run on every PR.
 - [Day 5] sqlfluff 4.3 with the dbt templater: 100 style fixes, dbt build still PASS=42 afterwards (never trust an auto-fix without the tests). Excluded ST06 (reorders SELECT columns — would break the union-by-position in fct_team_match), RF04 (renaming result/position changes the contract), AL03.
+- [Day 5] Unit test on fct_team_form: 7 hand-made rows where a one-row leak changes the answer. Proved it catches the bug: widening the frame to include the current row failed with t1 NULL→3 and t2 3→4; restored → pass. It checks matches_in_window too, because one row (t3) got the right points by coincidence.
+- [Day 5] pytest on parse_match_date: both year formats, day-first (03/04 = 3 April), bad values → null not crash. Data tests find bad data; unit tests find bad logic, before it meets data.

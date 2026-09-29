@@ -1,0 +1,23 @@
+unit_tests:
+  - name: form_window_never_sees_the_current_match
+    description: points_last_5 uses only earlier matches, and slides after five.
+    model: fct_team_form
+    given:
+      - input: ref('fct_team_match')
+        rows:
+          - {team_match_key: t1, match_key: m1, team_key: a, match_date: 2025-08-01, season: '2526', div_code: E0, points: 3, goals_for: 2, goals_against: 0}
+          - {team_match_key: t2, match_key: m2, team_key: a, match_date: 2025-08-08, season: '2526', div_code: E0, points: 1, goals_for: 1, goals_against: 1}
+          - {team_match_key: t3, match_key: m3, team_key: a, match_date: 2025-08-15, season: '2526', div_code: E0, points: 0, goals_for: 0, goals_against: 2}
+          - {team_match_key: t4, match_key: m4, team_key: a, match_date: 2025-08-22, season: '2526', div_code: E0, points: 3, goals_for: 3, goals_against: 1}
+          - {team_match_key: t5, match_key: m5, team_key: a, match_date: 2025-08-29, season: '2526', div_code: E0, points: 3, goals_for: 2, goals_against: 1}
+          - {team_match_key: t6, match_key: m6, team_key: a, match_date: 2025-09-05, season: '2526', div_code: E0, points: 1, goals_for: 0, goals_against: 0}
+          - {team_match_key: t7, match_key: m7, team_key: a, match_date: 2025-09-12, season: '2526', div_code: E0, points: 0, goals_for: 1, goals_against: 3}
+    expect:
+      rows:
+        - {team_match_key: t1, points_last_5: null, matches_in_window: 0}   # nothing before the first match
+        - {team_match_key: t2, points_last_5: 3, matches_in_window: 1}      # 3, not 4: its own point is excluded
+        - {team_match_key: t3, points_last_5: 4, matches_in_window: 2}
+        - {team_match_key: t4, points_last_5: 4, matches_in_window: 3}
+        - {team_match_key: t5, points_last_5: 7, matches_in_window: 4}
+        - {team_match_key: t6, points_last_5: 10, matches_in_window: 5}
+        - {team_match_key: t7, points_last_5: 8, matches_in_window: 5}      # window slid: m1 dropped
