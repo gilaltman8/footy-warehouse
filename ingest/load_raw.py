@@ -136,6 +136,6 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("databricks").setLevel(logging.WARNING)   # hide the connector's per-request chatter
     sys.exit(main())
