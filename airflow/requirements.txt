@@ -1,0 +1,3 @@
+# Airflow's own extras only. dbt and the ingest libraries live in a separate venv (Dockerfile),
+# because they pin versions that fight with Airflow's.
+apache-airflow-providers-http

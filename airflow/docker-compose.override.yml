@@ -1,0 +1,8 @@
+x-mounts: &mounts
+  volumes:
+    - ../dbt/footy_wh:/usr/local/airflow/dbt/footy_wh
+    - ../ingest:/usr/local/airflow/ingest
+services:            # Airflow 3 service names (Airflow 2 had "webserver" instead)
+  scheduler: *mounts     # tasks execute here
+  dag-processor: *mounts
+  triggerer: *mounts
