@@ -75,6 +75,22 @@ def ddl(cur) -> None:
             log.warning("schema change: added raw column %s", c)
 
 
+def season_window(season: str) -> tuple[dt.date, dt.date]:
+    """'2627' -> (2026-07-01, 2027-06-30). Rejects anything that is not two consecutive years,
+    e.g. '9999' — football-data.co.uk answered that with the 1998/99 files and HTTP 200."""
+    if len(season) != 4 or not season.isdigit() or (int(season[:2]) + 1) % 100 != int(season[2:]):
+        raise argparse.ArgumentTypeError(f"season must be two consecutive years like 2627, got {season!r}")
+    start = 2000 + int(season[:2])
+    return dt.date(start, 7, 1), dt.date(start + 1, 6, 30)
+
+
+def dates_in_season(df: pd.DataFrame, season: str) -> bool:
+    """Content check before anything destructive: every parsed match date must fall inside the season."""
+    lo, hi = season_window(season)
+    d = pd.to_datetime(df["match_date"], errors="coerce").dropna().dt.date
+    return len(d) > 0 and bool(d.between(lo, hi).all())
+
+
 def fetch(season: str, div: str):
     url = f"https://www.football-data.co.uk/mmz4281/{season}/{div}.csv"
     r = requests.get(url, timeout=30)
@@ -115,12 +131,14 @@ def load(cur, season: str, div: str, path: str) -> None:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--season", required=True, help="e.g. 2627 for 2026/27")
+    ap.add_argument("--season", required=True, help="e.g. 2627 for 2026/27",
+                    type=lambda x: (season_window(x), x)[1])   # reject 9999 before any network call
     ap.add_argument("--divs", nargs="+", default=ALL_DIVS)
     a = ap.parse_args(argv)
 
     w = WorkspaceClient()                      # reads DATABRICKS_HOST / DATABRICKS_TOKEN
     failures = 0
+    rejected = 0
     with connect() as conn, conn.cursor() as cur:
         ddl(cur)
         for div in a.divs:
@@ -129,10 +147,16 @@ def main(argv=None) -> int:
                 log.warning("skip %s: not available at %s", div, url)
                 failures += 1
                 continue
+            if not dates_in_season(df, a.season):          # never DELETE a slice for data that is not that season
+                log.error("reject %s/%s: match dates outside the season window — not loading %s", a.season, div, url)
+                rejected += 1
+                continue
             path = upload(w, a.season, div, df, csv_text)
             load(cur, a.season, div, path)
             log.info("loaded %s rows for %s/%s from %s", len(df), a.season, div, path)
-    return 1 if failures == len(a.divs) else 0   # fail only if nothing loaded
+    if rejected:
+        return 1                                   # wrong data is always a failure
+    return 1 if failures == len(a.divs) else 0   # a missing file fails only if nothing loaded
 
 
 if __name__ == "__main__":
