@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.http.sensors.http import HttpSensor
 from airflow.sdk import DAG, TaskGroup, Variable
 
 DIVS = ["E0", "E1", "SP1", "D1", "I1", "F1"]
@@ -67,4 +68,14 @@ with DAG(
         execution_timeout=timedelta(minutes=30),   # a hung build fails loudly instead of blocking tomorrow
     )
 
-    ingest >> dbt_freshness >> dbt_build
+    site_up = HttpSensor(
+        task_id="site_available",
+        http_conn_id="football_data",
+        endpoint="mmz4281/{{ params.season or var.value.footy_current_season }}/E0.csv",
+        method="HEAD",
+        mode="reschedule",      # frees the worker slot between checks; "poke" would hold it the whole wait
+        poke_interval=300,      # check every 5 minutes
+        timeout=3600,           # give up after an hour
+    )
+
+    site_up >> ingest >> dbt_freshness >> dbt_build

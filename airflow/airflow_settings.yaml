@@ -1,0 +1,13 @@
+# Applied by `astro dev start`. Configuration only — never put a token or password here.
+airflow:
+  connections:
+    - conn_id: football_data
+      conn_type: http
+      conn_host: https://www.football-data.co.uk
+  pools:
+    - pool_name: raw_matches_writer
+      pool_slot: 1
+      pool_description: one writer at a time for footy.raw.matches (COPY INTO conflicts)
+  variables:
+    - variable_name: footy_current_season
+      variable_value: "2627"
