@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: dbt-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}   # cancel superseded PR builds, never a main deploy
 
 env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
