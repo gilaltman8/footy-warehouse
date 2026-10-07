@@ -1,8 +1,7 @@
 name: dbt CI
 
 on:
-  pull_request:
-    paths: ["dbt/**", "ingest/**", "tests/**", ".github/workflows/dbt_ci.yml"]
+  pull_request:   # no paths filter: a required check must always report, or the PR waits forever
   push:
     branches: [main]
     paths: ["dbt/**", "ingest/**", "tests/**", ".github/workflows/dbt_ci.yml"]
