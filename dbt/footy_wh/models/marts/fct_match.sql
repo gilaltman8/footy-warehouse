@@ -4,7 +4,14 @@
     unique_key = 'match_key',
     file_format = 'delta',
     liquid_clustered_by = ['match_date', 'div_code'],
-    on_schema_change = 'append_new_columns'
+    on_schema_change = 'append_new_columns',
+    post_hook = [
+        "create table if not exists {{ this.database }}.{{ this.schema }}.pipeline_log
+            (logged_at timestamp, target string, model string, row_count bigint, invocation_id string)",
+        "insert into {{ this.database }}.{{ this.schema }}.pipeline_log
+            select current_timestamp(), '{{ target.name }}', '{{ this.identifier }}', count(*), '{{ invocation_id }}'
+            from {{ this }}"
+    ]
 ) }}
 
 select

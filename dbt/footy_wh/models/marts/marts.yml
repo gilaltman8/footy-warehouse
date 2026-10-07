@@ -29,6 +29,12 @@ models:
     description: >
       One row per match with typed stats, points and odds. Incremental MERGE on match_key;
       watermark on _loaded_at with a lookback (var lookback_days, default 3).
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 1500
+            group_by: [season]
+            row_condition: "season <> '{{ var('current_season', '2627') }}'"   # the season in progress is still filling up
     columns:
       - name: match_key
         description: "{{ doc('match_key') }}"
@@ -64,6 +70,11 @@ models:
                 field: team_key
       - name: home_goals
         description: Full-time goals by the home team.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 15
       - name: away_goals
         description: Full-time goals by the away team.
       - name: full_time_result
@@ -98,6 +109,12 @@ models:
         description: Red cards shown to the away team.
       - name: odds_home
         description: Bet365 decimal odds for a home win.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1.0
+                max_value: 100
+                row_condition: "odds_home is not null"
       - name: odds_draw
         description: Bet365 decimal odds for a draw.
       - name: odds_away
