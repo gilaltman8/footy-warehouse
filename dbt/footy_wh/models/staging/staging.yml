@@ -44,7 +44,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['H', 'D']
+                values: ['H', 'D', 'A']
       - name: ht_home_goals
         description: Half-time goals by the home team (try_cast; null if missing).
       - name: ht_away_goals
