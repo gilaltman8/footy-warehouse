@@ -52,7 +52,7 @@ jobs:
         run: |
           dbt docs generate --target ci --static
           cp target/static_index.html target/index.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name == 'push'
         with:
           path: dbt/footy_wh/target
@@ -69,4 +69,4 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
