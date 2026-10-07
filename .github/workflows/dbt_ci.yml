@@ -1,0 +1,73 @@
+name: dbt CI
+
+on:
+  pull_request:
+    paths: ["dbt/**", "ingest/**", "tests/**", ".github/workflows/dbt_ci.yml"]
+  push:
+    branches: [main]
+    paths: ["dbt/**", "ingest/**", "tests/**", ".github/workflows/dbt_ci.yml"]
+
+concurrency:
+  group: dbt-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install "pandas==3.*" pyarrow requests databricks-sql-connector databricks-sdk pytest
+      - run: python -m pytest -q tests/
+
+  build:
+    needs: python-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt/footy_wh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install "dbt-core==1.12.3" "dbt-databricks==1.12.5" "sqlfluff==4.3.0" "sqlfluff-templater-dbt==4.3.0"   # the versions tested locally
+      - name: Write profiles
+        run: |
+          mkdir -p ~/.dbt
+          cp profiles.ci.yml ~/.dbt/profiles.yml
+      - run: dbt deps
+      - run: sqlfluff lint models/
+      - run: dbt build --target ci
+      - name: Generate docs
+        if: github.event_name == 'push'
+        run: |
+          dbt docs generate --target ci --static
+          cp target/static_index.html target/index.html
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push'
+        with:
+          path: dbt/footy_wh/target
+
+  deploy-docs:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
